@@ -351,6 +351,21 @@ function createHotspots(visor) {
 
   console.log("Colored hotspots created");
 
+  addHoverEffect(
+      leftMesh,
+      leftMaterial
+  );
+
+  addHoverEffect(
+      centerMesh,
+      centerMaterial
+  );
+
+  addHoverEffect(
+      rightMesh,
+      rightMaterial
+  );
+
   setupRaycaster(
       leftMesh,
       centerMesh,
@@ -545,3 +560,53 @@ introVideo.addEventListener("ended", () => {
     }, 1500);
 
 });
+
+/* =====================================
+   hotspots HOVERS
+===================================== */
+
+function addHoverEffect(mesh, material) {
+
+  const originalOpacity = 0.15;
+
+  window.addEventListener("mousemove", (event) => {
+
+      const raycaster = new THREE.Raycaster();
+
+      const mouse = new THREE.Vector2();
+
+      mouse.x =
+          (event.clientX / window.innerWidth) * 2 - 1;
+
+      mouse.y =
+          -(event.clientY / window.innerHeight) * 2 + 1;
+
+      const cameraEl =
+          document.querySelector("a-camera");
+
+      const camera =
+          cameraEl.getObject3D("camera");
+
+      if (!camera) return;
+
+      raycaster.setFromCamera(
+          mouse,
+          camera
+      );
+
+      const hits =
+          raycaster.intersectObject(
+              mesh,
+              true
+          );
+
+      if (hits.length > 0) {
+
+          material.opacity = 0.45;
+
+      } else {
+
+          material.opacity = originalOpacity;
+      }
+  });
+}
