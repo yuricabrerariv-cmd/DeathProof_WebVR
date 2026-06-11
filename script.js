@@ -210,7 +210,12 @@ const modalImage = document.getElementById("modalImage");
 const youtubeFrame = document.getElementById("youtubeFrame");
 const closeModal = document.getElementById("closeModal");
 
-function openImage(src) {
+async function openImage(src) {
+
+    if (document.fullscreenElement) {
+
+        await document.exitFullscreen();
+    }
 
     modal.style.display = "block";
 
@@ -223,7 +228,12 @@ function openImage(src) {
     modalImage.src = src;
 }
 
-function openVideo(url) {
+async function openVideo(url) {
+
+    if (document.fullscreenElement) {
+
+        await document.exitFullscreen();
+    }
 
     modal.style.display = "block";
 
