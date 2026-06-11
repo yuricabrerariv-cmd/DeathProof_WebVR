@@ -253,7 +253,7 @@ modal.addEventListener("click", (e) => {
 
 function createHotspots(visor) {
 
-  // RED - Tarantino
+  // RED hotspot - Tarantino
   const leftMaterial =
       new THREE.MeshBasicMaterial({
           color: 0xff0000,
@@ -262,19 +262,19 @@ function createHotspots(visor) {
           side: THREE.DoubleSide
       });
 
-  // GREEN - The Girls
+  // RED hotspot - The Girls
   const centerMaterial =
       new THREE.MeshBasicMaterial({
-          color: 0x00ff00,
+          color: 0xff0000,
           transparent: true,
           opacity: 0,
           side: THREE.DoubleSide
       });
 
-  // BLUE - Video
+  // RED hotspot - Video
   const rightMaterial =
       new THREE.MeshBasicMaterial({
-          color: 0x0000ff,
+          color: 0xff0000,
           transparent: true,
           opacity: 0,
           side: THREE.DoubleSide
