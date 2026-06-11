@@ -565,9 +565,11 @@ introVideo.addEventListener("ended", () => {
    hotspots HOVERS
 ===================================== */
 
+let hoverTargets = [];
+
 function addHoverEffect(mesh, material) {
 
-  const originalOpacity = 0.15;
+
 
   window.addEventListener("mousemove", (event) => {
 
@@ -595,22 +597,82 @@ function addHoverEffect(mesh, material) {
       );
 
       const hits =
-          raycaster.intersectObject(
-              mesh,
-              true
-          );
+    raycaster.intersectObject(
+        mesh,
+        true
+    );
 
-          if (hits.length > 0) {
+        const target =
+            hoverTargets.find(
+                h => h.mesh === mesh
+            );
+
+        if (!target) return;
+
+        if (hits.length > 0) {
+
+            target.hovered = true;
+
+        } else {
+
+            target.hovered = false;
+        }
+  });
+
+    hoverTargets.push({
+        mesh,
+        material,
+        hovered: false
+    });
+
+}
+
+function animateHoverEffects() {
+
+    requestAnimationFrame(
+        animateHoverEffects
+    );
+
+    hoverTargets.forEach(item => {
+
+        if (item.hovered) {
 
             const flicker =
-                0.08 +
-                Math.random() * 0.12;
+                0.03 +
+                Math.random() * 0.05;
         
-            material.opacity = flicker;
+            item.material.opacity +=
+                (flicker - item.material.opacity)
+                * 0.15;
+        
+            const pulse =
+                1 +
+                Math.sin(
+                    performance.now() * 0.004
+                ) * 0.015;
+        
+            item.mesh.scale.set(
+                pulse,
+                pulse,
+                pulse
+            );
         
         } else {
         
-            material.opacity = 0;
+            item.material.opacity +=
+                (0 - item.material.opacity)
+                * 0.08;
+        
+            item.mesh.scale.lerp(
+                new THREE.Vector3(
+                    1,
+                    1,
+                    1
+                ),
+                0.08
+            );
         }
-  });
+    });
 }
+
+animateHoverEffects();
