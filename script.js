@@ -258,7 +258,7 @@ function createHotspots(visor) {
       new THREE.MeshBasicMaterial({
           color: 0xff0000,
           transparent: true,
-          opacity: 0.15,
+          opacity: 0,
           side: THREE.DoubleSide
       });
 
@@ -267,7 +267,7 @@ function createHotspots(visor) {
       new THREE.MeshBasicMaterial({
           color: 0x00ff00,
           transparent: true,
-          opacity: 0.15,
+          opacity: 0,
           side: THREE.DoubleSide
       });
 
@@ -276,7 +276,7 @@ function createHotspots(visor) {
       new THREE.MeshBasicMaterial({
           color: 0x0000ff,
           transparent: true,
-          opacity: 0.15,
+          opacity: 0,
           side: THREE.DoubleSide
       });
 
@@ -602,7 +602,7 @@ function addHoverEffect(mesh, material) {
 
       if (hits.length > 0) {
 
-          material.opacity = 0.45;
+          material.opacity = 0.20;
 
       } else {
 
