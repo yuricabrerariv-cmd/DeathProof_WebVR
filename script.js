@@ -569,38 +569,36 @@ let hoverTargets = [];
 
 function addHoverEffect(mesh, material) {
 
+    window.addEventListener("mousemove", (event) => {
 
+        const raycaster = new THREE.Raycaster();
 
-  window.addEventListener("mousemove", (event) => {
+        const mouse = new THREE.Vector2();
 
-      const raycaster = new THREE.Raycaster();
+        mouse.x =
+            (event.clientX / window.innerWidth) * 2 - 1;
 
-      const mouse = new THREE.Vector2();
+        mouse.y =
+            -(event.clientY / window.innerHeight) * 2 + 1;
 
-      mouse.x =
-          (event.clientX / window.innerWidth) * 2 - 1;
+        const cameraEl =
+            document.querySelector("a-camera");
 
-      mouse.y =
-          -(event.clientY / window.innerHeight) * 2 + 1;
+        const camera =
+            cameraEl.getObject3D("camera");
 
-      const cameraEl =
-          document.querySelector("a-camera");
+        if (!camera) return;
 
-      const camera =
-          cameraEl.getObject3D("camera");
+        raycaster.setFromCamera(
+            mouse,
+            camera
+        );
 
-      if (!camera) return;
-
-      raycaster.setFromCamera(
-          mouse,
-          camera
-      );
-
-      const hits =
-    raycaster.intersectObject(
-        mesh,
-        true
-    );
+        const hits =
+            raycaster.intersectObject(
+                mesh,
+                true
+            );
 
         const target =
             hoverTargets.find(
@@ -617,14 +615,16 @@ function addHoverEffect(mesh, material) {
 
             target.hovered = false;
         }
-  });
+    });
 
     hoverTargets.push({
         mesh,
         material,
-        hovered: false
-    });
+        hovered: false,
 
+        originalPosition:
+            mesh.position.clone()
+    });
 }
 
 function animateHoverEffects() {
@@ -638,31 +638,43 @@ function animateHoverEffects() {
         if (item.hovered) {
 
             const flicker =
-                0.03 +
-                Math.random() * 0.05;
-        
+                0.18 +
+                Math.random() * 0.15;
+
             item.material.opacity +=
                 (flicker - item.material.opacity)
                 * 0.15;
-        
+
             const pulse =
                 1 +
                 Math.sin(
-                    performance.now() * 0.004
-                ) * 0.015;
-        
+                    performance.now() * 0.01
+                ) * 0.06;
+
+            const shakeAmount = 0.01;
+
             item.mesh.scale.set(
                 pulse,
                 pulse,
                 pulse
             );
-        
+
+            item.mesh.position.set(
+                item.originalPosition.x +
+                    (Math.random() - 0.5) * shakeAmount,
+
+                item.originalPosition.y +
+                    (Math.random() - 0.5) * shakeAmount,
+
+                item.originalPosition.z
+            );
+
         } else {
-        
+
             item.material.opacity +=
                 (0 - item.material.opacity)
                 * 0.08;
-        
+
             item.mesh.scale.lerp(
                 new THREE.Vector3(
                     1,
@@ -670,6 +682,10 @@ function animateHoverEffects() {
                     1
                 ),
                 0.08
+            );
+
+            item.mesh.position.copy(
+                item.originalPosition
             );
         }
     });
