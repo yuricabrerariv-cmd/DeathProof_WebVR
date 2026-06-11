@@ -600,13 +600,17 @@ function addHoverEffect(mesh, material) {
               true
           );
 
-      if (hits.length > 0) {
+          if (hits.length > 0) {
 
-          material.opacity = 0.20;
-
-      } else {
-
-          material.opacity = originalOpacity;
-      }
+            const flicker =
+                0.08 +
+                Math.random() * 0.12;
+        
+            material.opacity = flicker;
+        
+        } else {
+        
+            material.opacity = 0;
+        }
   });
 }
