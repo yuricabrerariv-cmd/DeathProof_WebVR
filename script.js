@@ -1,11 +1,3 @@
-// Three.js r168 (bundled in A-Frame 1.7.x) crashes when A-Frame calls
-// renderer.xr.setSession(null) during VR teardown — patch it to be a no-op.
-document.querySelector('a-scene').addEventListener('loaded', function () {
-    const xr = this.renderer.xr;
-    const orig = xr.setSession.bind(xr);
-    xr.setSession = (session) => session ? orig(session) : Promise.resolve();
-});
-
 (function () {
     const btn = document.getElementById('sound-btn');
     let playing = false;
@@ -53,7 +45,38 @@ document.querySelector('a-scene').addEventListener('loaded', function () {
     this._wp          = new THREE.Vector3();
     this._wq          = new THREE.Quaternion();
     this._tickCount   = 0;
-  
+    this._inVR = false;
+
+    // Cache references early so enter-vr/exit-vr handlers work even if the
+    // model hasn't finished loading yet.
+    this.aframeCamera = this.el.sceneEl.querySelector('a-camera');
+    this.vrCameraRig  = this.el.sceneEl.querySelector('#VRcameraRig');
+    this.vrCamera     = this.el.sceneEl.querySelector('#vr-camera');
+
+    // ── Real VR headset: enter-vr / exit-vr ──────────────────────────────
+    this.el.sceneEl.addEventListener('enter-vr', () => {
+      this._activateVRCamera();
+    });
+
+    this.el.sceneEl.addEventListener('exit-vr', () => {
+      this._deactivateVRCamera();
+    });
+
+    // ── Desktop testing: press V to toggle VR camera WITHOUT WebXR ───────
+    // This bypasses WebXR entirely so look-controls has full mouse control.
+    // Click on the canvas once to lock the pointer, then move mouse to look.
+    // Press Escape or V again to return to the animated 2D camera.
+    this._onKeyV = (e) => {
+      if (e.key !== 'v' && e.key !== 'V') return;
+      if (this.el.sceneEl.is('vr-mode')) return; // real headset is active, leave it alone
+      if (this._inVR) {
+        this._deactivateVRCamera();
+      } else {
+        this._activateVRCamera();
+      }
+    };
+    window.addEventListener('keydown', this._onKeyV);
+
     this.el.addEventListener('model-loaded', (e) => {
       const gltf      = e.detail.model;
       this.sceneRoot  = gltf.scene || gltf;
@@ -184,8 +207,9 @@ document.querySelector('a-scene').addEventListener('loaded', function () {
     // picking up the new position/quaternion/scale values we just wrote.
     this.animatedTargets.forEach(t => t.updateWorldMatrix(false, true));
   
-    // Copy Camera_Animated's updated world transform to the A-Frame camera
-    if (this.gltfCamera && this.aframeCamera) {
+    // Copy Camera_Animated's updated world transform to the 2D camera.
+    // Skipped in VR — the VR camera is driven by head tracking instead.
+    if (this.gltfCamera && this.aframeCamera && !this._inVR) {
       this.gltfCamera.getWorldPosition(this._wp);
       this.gltfCamera.getWorldQuaternion(this._wq);
       this.aframeCamera.object3D.position.copy(this._wp);
@@ -202,10 +226,61 @@ document.querySelector('a-scene').addEventListener('loaded', function () {
     }
   },
   
+  _activateVRCamera() {
+    this._inVR = true;
+
+    // Position the rig at Camera_Animated's last-frame world position,
+    // regardless of where the user has scrolled to.
+    if (this.gltfCamera && this.vrCameraRig && this.interpolants.length && this.duration) {
+      const savedTime = this.currentTime;
+
+      // Evaluate all tracks at the final frame.
+      this.interpolants.forEach(({ interpolant, prop, target }) => {
+        interpolant.evaluate(this.duration);
+        const v = interpolant.resultBuffer;
+        if      (prop === 'position')   target.position.set(v[0], v[1], v[2]);
+        else if (prop === 'quaternion') target.quaternion.set(v[0], v[1], v[2], v[3]);
+        else if (prop === 'scale')      target.scale.set(v[0], v[1], v[2]);
+      });
+      this.animatedTargets.forEach(t => t.updateWorldMatrix(false, true));
+
+      this.gltfCamera.getWorldPosition(this._wp);
+      this.vrCameraRig.object3D.position.copy(this._wp);
+
+      // Restore the scene to the user's current scroll position.
+      this.interpolants.forEach(({ interpolant, prop, target }) => {
+        interpolant.evaluate(savedTime);
+        const v = interpolant.resultBuffer;
+        if      (prop === 'position')   target.position.set(v[0], v[1], v[2]);
+        else if (prop === 'quaternion') target.quaternion.set(v[0], v[1], v[2], v[3]);
+        else if (prop === 'scale')      target.scale.set(v[0], v[1], v[2]);
+      });
+      this.animatedTargets.forEach(t => t.updateWorldMatrix(false, true));
+    }
+
+    if (this.vrCamera) {
+      this.vrCamera.object3D.position.set(0, 0, 0);
+      this.vrCamera.object3D.quaternion.identity();
+    }
+    if (this.vrCamera)     this.vrCamera.setAttribute('camera', 'active', true);
+    if (this.aframeCamera) this.aframeCamera.setAttribute('camera', 'active', false);
+  },
+
+  _deactivateVRCamera() {
+    this._inVR = false;
+    if (this.aframeCamera) this.aframeCamera.setAttribute('camera', 'active', true);
+    if (this.vrCamera)     this.vrCamera.setAttribute('camera', 'active', false);
+    if (this.vrCameraRig) {
+      this.vrCameraRig.object3D.position.set(0, 0, 0);
+      this.vrCameraRig.object3D.quaternion.identity();
+    }
+  },
+
   remove() {
     window.removeEventListener('wheel',      this._onWheel);
     window.removeEventListener('touchstart', this._onTouchStart);
     window.removeEventListener('touchmove',  this._onTouchMove);
+    window.removeEventListener('keydown',    this._onKeyV);
   },
   });
   

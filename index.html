@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Death Proof Project</title>
 
-    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="./script.js" defer></script>
     
     <link rel="stylesheet" href="./css/modalstyles.css">
@@ -43,8 +43,7 @@
     <!-- Starts muted until the user clicks (browser autoplay policy requires a gesture) -->
     <button id="sound-btn" title="Unmute sound">&#128263;</button>
 
-    <a-scene id="main-scene" style="opacity:0;"
-        webxr="optionalFeatures: local-floor, bounded-floor, hand-tracking">
+    <a-scene id="main-scene" style="opacity:0;">
         <!-- Assets Management System -->
         <a-assets>
 
@@ -74,13 +73,23 @@
         
         <!-- Camera Rig / Wrapper -->
         <!-- The Camera -->
-            <a-camera wasd-controls="enabled: false" look-controls>
+            <a-camera wasd-controls="enabled: false" user-height="0" look-controls>
                 <a-cursor
                     color="white"
                     rayOrigin="mouse"
                     material="opacity: 0">
                 </a-cursor>
             </a-camera>
+
+        <!-- VR Camera — inactive until VR is entered; rig is repositioned at that point -->
+            <a-entity id="VRcameraRig">
+                <a-camera id="vr-camera"
+                    camera="active: false"
+                    wasd-controls="enabled: false"
+                    user-height="0"
+                    look-controls="pointerLockEnabled: true">
+                </a-camera>
+            </a-entity>
 
     </a-scene>
 
