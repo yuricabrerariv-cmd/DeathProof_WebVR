@@ -42,10 +42,13 @@
     this.gltfCamera   = null;
     this.aframeCamera = null;
     this.sceneRoot    = null;
-    this._wp          = new THREE.Vector3();
-    this._wq          = new THREE.Quaternion();
-    this._tickCount   = 0;
-    this._inVR = false;
+    this._wp           = new THREE.Vector3();
+    this._wq           = new THREE.Quaternion();
+    this._tickCount    = 0;
+    this._inVR         = false;
+    this._vrTargetPos  = new THREE.Vector3();
+    // 2 = inactive; set to 0 on enter-vr so we wait 2 ticks for XR pose to stabilise
+    this._vrPoseFixState = 2;
 
     // Cache references early so enter-vr/exit-vr handlers work even if the
     // model hasn't finished loading yet.
@@ -56,6 +59,7 @@
     // ── Real VR headset: enter-vr / exit-vr ──────────────────────────────
     this.el.sceneEl.addEventListener('enter-vr', () => {
       this._activateVRCamera();
+      this._vrPoseFixState = 0; // start 2-frame countdown for XR head-pose correction
     });
 
     this.el.sceneEl.addEventListener('exit-vr', () => {
@@ -216,6 +220,21 @@
       this.aframeCamera.object3D.quaternion.copy(this._wq);
     }
   
+    // WebXR head-pose correction (VR button only, not V key).
+    // Three.js applies the XR pose to the camera AFTER tick() each frame, so we
+    // wait 2 ticks: on tick 2 the camera world-position already includes the XR
+    // head offset from the previous render. We shift the rig to compensate.
+    if (this._inVR && this.el.sceneEl.is('vr-mode') && this._vrPoseFixState < 2) {
+      this._vrPoseFixState++;
+      if (this._vrPoseFixState === 2 && this.vrCamera && this.vrCameraRig) {
+        const actualPos = new THREE.Vector3();
+        this.vrCamera.object3D.getWorldPosition(actualPos);
+        this.vrCameraRig.object3D.position.x += this._vrTargetPos.x - actualPos.x;
+        this.vrCameraRig.object3D.position.y += this._vrTargetPos.y - actualPos.y;
+        this.vrCameraRig.object3D.position.z += this._vrTargetPos.z - actualPos.z;
+      }
+    }
+
     if (++this._tickCount % 60 === 0) {
       const vp = new THREE.Vector3();
       this.animatedTargets[0]?.getWorldPosition(vp);
@@ -246,6 +265,7 @@
 
       this.gltfCamera.getWorldPosition(this._wp);
       this.vrCameraRig.object3D.position.copy(this._wp);
+      this._vrTargetPos.copy(this._wp); // used by tick() to correct XR head-pose offset
 
       // Restore the scene to the user's current scroll position.
       this.interpolants.forEach(({ interpolant, prop, target }) => {
